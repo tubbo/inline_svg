@@ -4,12 +4,17 @@
 # https://github.com/AbleHealth/inline_svg/commit/661bbb3bef7d1b4bd6ccd63f5f018305797b9509
 module InlineSvg
   class StaticAssetFinder
+    attr_reader :manifest, :assets, :asset_path
+
     def self.find_asset(filename)
       new(filename)
     end
 
     def initialize(filename)
       @filename = filename
+      @manifest = ::Rails.application.assets_manifest
+      @assets = ::Rails.application.config.assets
+      @asset_path = manifest.assets[@filename]
     end
 
     def pathname
@@ -25,19 +30,15 @@ module InlineSvg
     private
 
     def previously_compiled?
-      ::Rails.application.config.assets.compile && compiled_pathname.exist?
+      assets.compile && compiled_pathname.exist?
     end
 
     def compiled_pathname
-      ::Rails.application.assets[@filename].pathname
+      assets[@filename].pathname
     end
 
     def manifest_pathname
-      manifest = ::Rails.application.assets_manifest
-      asset_path = manifest.assets[@filename]
-      unless asset_path.nil?
-        ::Rails.root.join(manifest.directory, asset_path)
-      end
+      ::Rails.root.join(manifest.directory, asset_path) unless asset_path.nil?
     end
 
     def engine_pathname
@@ -49,7 +50,7 @@ module InlineSvg
     end
 
     def engine_paths
-      ::Rails.configuration.assets.paths.map { |path| Pathname.new(path) }
+      assets.paths.map { |path| Pathname.new(path) }
     end
   end
 end
